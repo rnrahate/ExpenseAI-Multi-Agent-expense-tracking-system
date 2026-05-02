@@ -1,11 +1,11 @@
 from typing import List
-from models.schemas import ExpenseItem, AnalyzeResponse, CategoryBreakdown, Alert
-from agents.ingestion_agent import IngestionAgent
-from agents.classification_agent import ClassificationAgent
-from agents.pattern_agent import PatternAgent
-from agents.risk_agent import RiskAgent
-from agents.suggestion_agent import SuggestionAgent
-from logger import setup_logger
+from backend.models.schemas import ExpenseItem, AnalyzeResponse, CategoryBreakdown, Alert
+from backend.agents.ingestion_agent import IngestionAgent
+from backend.agents.classification_agent import ClassificationAgent
+from backend.agents.pattern_agent import PatternAgent
+from backend.agents.risk_agent import RiskAgent
+from backend.agents.suggestion_agent import SuggestionAgent
+from backend.logger import setup_logger
 
 logger = setup_logger(__name__)
 

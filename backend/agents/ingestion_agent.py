@@ -1,7 +1,7 @@
 from typing import List
-from models.schemas import ExpenseItem
-from logger import setup_logger
-from utils.validators import validate_expense
+from backend.models.schemas import ExpenseItem
+from backend.logger import setup_logger
+from backend.utils.validators import validate_expense
 
 logger = setup_logger(__name__)
 

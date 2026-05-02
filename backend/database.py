@@ -1,8 +1,8 @@
 import asyncio
 
 from motor.motor_asyncio import AsyncIOMotorClient
-from config import settings
-from logger import setup_logger
+from backend.config import settings
+from backend.logger import setup_logger
 
 logger = setup_logger(__name__)
 

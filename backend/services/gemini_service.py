@@ -3,8 +3,8 @@ import json
 import subprocess
 import sys
 
-from config import settings
-from logger import setup_logger
+from backend.config import settings
+from backend.logger import setup_logger
 
 logger = setup_logger(__name__)
 GEMINI_TIMEOUT_SECONDS = 15

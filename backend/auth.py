@@ -3,8 +3,8 @@ from typing import Optional
 import jwt
 import bcrypt as bcrypt_module
 from passlib.context import CryptContext
-from config import settings
-from logger import setup_logger
+from backend.config import settings
+from backend.logger import setup_logger
 
 logger = setup_logger(__name__)
 

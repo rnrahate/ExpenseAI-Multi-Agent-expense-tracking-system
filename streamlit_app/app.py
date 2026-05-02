@@ -3,6 +3,7 @@ import requests
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from streamlit.errors import StreamlitSecretNotFoundError
 import os
 from datetime import date, datetime
 import json
@@ -11,23 +12,44 @@ import json
 # CONFIG
 # ─────────────────────────────────────────────
 
-def get_secret(name, default=None, sections=("expenseai", "google", "api")):
-    if name in st.secrets:
-        return st.secrets[name]
+def get_secret(name, default=None, sections=("expenseai", "google", "api"), aliases=None):
+    try:
+        secrets = st.secrets
 
-    for section in sections:
-        if section in st.secrets and name in st.secrets[section]:
-            return st.secrets[section][name]
+        candidate_names = [name]
+        if aliases:
+            candidate_names.extend(aliases)
+
+        for candidate in candidate_names:
+            if candidate in secrets:
+                return secrets[candidate]
+
+        for section in sections:
+            if section not in secrets:
+                continue
+            for candidate in candidate_names:
+                if candidate in secrets[section]:
+                    return secrets[section][candidate]
+    except StreamlitSecretNotFoundError:
+        return default
 
     return default
 
 
-GEMINI_API_KEY = get_secret("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY"))
+GEMINI_API_KEY = get_secret(
+    "GEMINI_API_KEY",
+    os.getenv("GEMINI_API_KEY"),
+    aliases=("gemini_api_key", "GOOGLE_API_KEY", "google_api_key"),
+)
 if GEMINI_API_KEY:
     os.environ["GEMINI_API_KEY"] = GEMINI_API_KEY
     os.environ.setdefault("GOOGLE_API_KEY", GEMINI_API_KEY)
 
-API_BASE = get_secret("API_BASE", os.getenv("EXPENSEAI_API_BASE", "http://localhost:8000"))
+API_BASE = get_secret(
+    "API_BASE",
+    "",
+    aliases=("api_base", "apiBase"),
+)
 
 st.set_page_config(
     page_title="ExpenseAI",
@@ -166,6 +188,9 @@ def fmt(n):
 
 
 def api_post(endpoint, payload, auth=False):
+    if not API_BASE:
+        return 0, {"detail": "API_BASE is missing. Set it in Streamlit secrets."}
+
     headers = {"Content-Type": "application/json"}
     if auth:
         headers["Authorization"] = f"Bearer {st.session_state.token}"

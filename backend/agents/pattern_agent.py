@@ -1,5 +1,5 @@
 from collections import defaultdict
-from logger import setup_logger
+from backend.logger import setup_logger
 
 logger = setup_logger(__name__)
 

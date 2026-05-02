@@ -17,7 +17,7 @@ import chromadb
 from chromadb.config import Settings as ChromaSettings
 from sentence_transformers import SentenceTransformer
 
-from logger import setup_logger
+from backend.logger import setup_logger
 
 logger = setup_logger(__name__)
 

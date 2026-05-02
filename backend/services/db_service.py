@@ -1,7 +1,7 @@
 from bson import ObjectId
-from database import get_db
-from exceptions import DatabaseUnavailableError
-from logger import setup_logger
+from backend.database import get_db
+from backend.exceptions import DatabaseUnavailableError
+from backend.logger import setup_logger
 
 logger = setup_logger(__name__)
 

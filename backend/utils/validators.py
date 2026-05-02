@@ -1,4 +1,4 @@
-from models.schemas import ExpenseItem
+from backend.models.schemas import ExpenseItem
 
 
 def validate_expense(expense: ExpenseItem) -> tuple[bool, str]:

@@ -1,5 +1,5 @@
-from services.gemini_service import GeminiService
-from logger import setup_logger
+from backend.services.gemini_service import GeminiService
+from backend.logger import setup_logger
 
 logger = setup_logger(__name__)
 

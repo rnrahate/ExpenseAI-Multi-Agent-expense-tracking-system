@@ -2,14 +2,14 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from contextlib import asynccontextmanager
-from logger import setup_logger
-from config import settings
-from database import connect_db, disconnect_db
-from auth import create_access_token, verify_token, hash_password, verify_password
-from models.schemas import SignupRequest, LoginRequest, AnalyzeRequest, TokenResponse, AnalyzeResponse
-from services.db_service import DBService
-from agents.orchestrator import Orchestrator
-from exceptions import AppException, DatabaseUnavailableError
+from backend.logger import setup_logger
+from backend.config import settings
+from backend.database import connect_db, disconnect_db
+from backend.auth import create_access_token, verify_token, hash_password, verify_password
+from backend.models.schemas import SignupRequest, LoginRequest, AnalyzeRequest, TokenResponse, AnalyzeResponse
+from backend.services.db_service import DBService
+from backend.agents.orchestrator import Orchestrator
+from backend.exceptions import AppException, DatabaseUnavailableError
 
 logger = setup_logger(__name__)
 bearer_scheme = HTTPBearer()

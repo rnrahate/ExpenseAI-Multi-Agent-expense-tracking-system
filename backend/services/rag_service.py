@@ -10,8 +10,8 @@ Flow:
   4. Return augmented context string → injected into Gemini suggestion prompt
 """
 
-from services.vector_store import retrieve_similar_sessions
-from logger import setup_logger
+from backend.services.vector_store import retrieve_similar_sessions
+from backend.logger import setup_logger
 
 logger = setup_logger(__name__)
 
