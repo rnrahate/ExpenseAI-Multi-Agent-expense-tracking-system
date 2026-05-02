@@ -10,7 +10,24 @@ import json
 # ─────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────
-API_BASE = os.getenv("EXPENSEAI_API_BASE", "http://localhost:8000")
+
+def get_secret(name, default=None, sections=("expenseai", "google", "api")):
+    if name in st.secrets:
+        return st.secrets[name]
+
+    for section in sections:
+        if section in st.secrets and name in st.secrets[section]:
+            return st.secrets[section][name]
+
+    return default
+
+
+GEMINI_API_KEY = get_secret("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY"))
+if GEMINI_API_KEY:
+    os.environ["GEMINI_API_KEY"] = GEMINI_API_KEY
+    os.environ.setdefault("GOOGLE_API_KEY", GEMINI_API_KEY)
+
+API_BASE = get_secret("API_BASE", os.getenv("EXPENSEAI_API_BASE", "http://localhost:8000"))
 
 st.set_page_config(
     page_title="ExpenseAI",
