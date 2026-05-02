@@ -3,13 +3,14 @@ import requests
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import os
 from datetime import date, datetime
 import json
 
 # ─────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────
-API_BASE = "http://localhost:8001"
+API_BASE = os.getenv("EXPENSEAI_API_BASE", "http://localhost:8000")
 
 st.set_page_config(
     page_title="ExpenseAI",
@@ -155,7 +156,7 @@ def api_post(endpoint, payload, auth=False):
         res = requests.post(f"{API_BASE}{endpoint}", json=payload, headers=headers, timeout=30)
         return res.status_code, res.json()
     except requests.exceptions.ConnectionError:
-        return 0, {"detail": "Cannot connect to backend. Is it running on port 8000?"}
+        return 0, {"detail": f"Cannot connect to backend at {API_BASE}. Is it running?"}
     except Exception as e:
         return 0, {"detail": str(e)}
 
@@ -199,10 +200,13 @@ def render_auth():
         # ── LOGIN ──
         with tab_login:
             st.markdown("<br>", unsafe_allow_html=True)
-            identifier = st.text_input("Email or Phone", key="login_id", placeholder="email@example.com or +91...")
-            password = st.text_input("Password", type="password", key="login_pass")
+            with st.form("login_form"):
+                identifier = st.text_input("Email or Phone", key="login_id", placeholder="email@example.com or +91...")
+                password = st.text_input("Password", type="password", key="login_pass")
+                login_submitted = st.form_submit_button("Sign In →", use_container_width=True)
 
-            if st.button("Sign In →", key="login_btn", use_container_width=True):
+            if login_submitted:
+                identifier = identifier.strip()
                 if not identifier or not password:
                     st.error("Please fill all fields")
                 else:
@@ -228,16 +232,18 @@ def render_auth():
         # ── SIGNUP ──
         with tab_signup:
             st.markdown("<br>", unsafe_allow_html=True)
-            c1, c2 = st.columns(2)
-            with c1:
-                first_name = st.text_input("First Name", key="su_fname")
-            with c2:
-                last_name = st.text_input("Last Name", key="su_lname")
-            email = st.text_input("Email", key="su_email")
-            phone = st.text_input("Phone Number", key="su_phone", placeholder="+91 9876543210")
-            pwd = st.text_input("Password", type="password", key="su_pass", help="Minimum 6 characters")
+            with st.form("signup_form"):
+                c1, c2 = st.columns(2)
+                with c1:
+                    first_name = st.text_input("First Name", key="su_fname")
+                with c2:
+                    last_name = st.text_input("Last Name", key="su_lname")
+                email = st.text_input("Email", key="su_email")
+                phone = st.text_input("Phone Number", key="su_phone", placeholder="+91 9876543210")
+                pwd = st.text_input("Password", type="password", key="su_pass", help="Minimum 6 characters")
+                signup_submitted = st.form_submit_button("Create Account →", use_container_width=True)
 
-            if st.button("Create Account →", key="signup_btn", use_container_width=True):
+            if signup_submitted:
                 first_name = first_name.strip()
                 last_name = last_name.strip()
                 email = email.strip()

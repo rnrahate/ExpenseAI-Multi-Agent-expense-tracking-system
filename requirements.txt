@@ -3,7 +3,7 @@ annotated-doc==0.0.4
 annotated-types==0.7.0
 anyio==4.13.0
 attrs==26.1.0
-bcrypt==5.0.0
+bcrypt==4.0.1
 blinker==1.9.0
 build==1.5.0
 cachetools==7.1.0
@@ -16,6 +16,7 @@ colorama==0.4.6
 cryptography==47.0.0
 distro==1.9.0
 dnspython==2.8.0
+dotenv==0.9.9
 durationpy==0.10
 email-validator==2.3.0
 fastapi==0.136.1

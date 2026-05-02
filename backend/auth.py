@@ -1,12 +1,25 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 import jwt
+import bcrypt as bcrypt_module
 from passlib.context import CryptContext
 from config import settings
 from logger import setup_logger
 
 logger = setup_logger(__name__)
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+if not hasattr(bcrypt_module, "__about__") and hasattr(bcrypt_module, "__version__"):
+    class _BcryptAbout:
+        __version__ = bcrypt_module.__version__
+
+    bcrypt_module.__about__ = _BcryptAbout()
+
+
+pwd_context = CryptContext(
+    schemes=["bcrypt_sha256", "bcrypt"],
+    deprecated="auto",
+)
 
 
 def hash_password(password: str) -> str:

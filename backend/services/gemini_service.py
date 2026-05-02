@@ -1,15 +1,58 @@
-import google.generativeai as genai
+import asyncio
+import json
+import subprocess
+import sys
+
 from config import settings
 from logger import setup_logger
 
 logger = setup_logger(__name__)
-
-genai.configure(api_key=settings.GEMINI_API_KEY)
+GEMINI_TIMEOUT_SECONDS = 15
+GEMINI_MODEL_NAME = "gemini-1.5-flash"
 
 
 class GeminiService:
-    def __init__(self):
-        self.model = genai.GenerativeModel("gemini-1.5-flash")
+    def _generate_json_sync(self, prompt: str) -> str:
+        worker_code = """
+import sys
+import google.generativeai as genai
+
+prompt = sys.argv[1]
+api_key = sys.argv[2]
+timeout = int(sys.argv[3])
+
+genai.configure(api_key=api_key)
+model = genai.GenerativeModel('gemini-1.5-flash')
+response = model.generate_content(prompt, request_options={'timeout': timeout})
+text = response.text.strip().replace('```json', '').replace('```', '').strip()
+print(text)
+"""
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                worker_code,
+                prompt,
+                settings.GEMINI_API_KEY,
+                str(GEMINI_TIMEOUT_SECONDS),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=GEMINI_TIMEOUT_SECONDS + 2,
+            check=False,
+        )
+
+        if completed.returncode != 0:
+            error_output = completed.stderr.strip() or completed.stdout.strip() or "Gemini request failed"
+            raise RuntimeError(error_output)
+
+        text = completed.stdout.strip()
+        if not text:
+            raise RuntimeError("Gemini returned no result")
+        return text
+
+    async def _generate_json(self, prompt: str) -> str:
+        return await asyncio.to_thread(self._generate_json_sync, prompt)
 
     async def classify_expense(self, description: str, amount: float) -> dict:
         prompt = f"""Classify this expense for a personal finance app.
@@ -22,9 +65,7 @@ Return ONLY a JSON object (no markdown) with:
 
 Example: {{"category": "Food", "is_essential": true, "reason": "Basic nutrition need"}}"""
         try:
-            response = self.model.generate_content(prompt)
-            text = response.text.strip().replace("```json", "").replace("```", "").strip()
-            import json
+            text = await self._generate_json(prompt)
             result = json.loads(text)
             logger.info(f"Gemini classified '{description}' as {result.get('category')}")
             return result
@@ -46,9 +87,7 @@ Summary:
 Return ONLY a JSON array of 4 suggestion strings. No markdown, no preamble.
 Example: ["Tip 1", "Tip 2", "Tip 3", "Tip 4"]"""
         try:
-            response = self.model.generate_content(prompt)
-            text = response.text.strip().replace("```json", "").replace("```", "").strip()
-            import json
+            text = await self._generate_json(prompt)
             suggestions = json.loads(text)
             logger.info("Gemini suggestions generated successfully")
             return suggestions

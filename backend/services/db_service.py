@@ -1,5 +1,6 @@
 from bson import ObjectId
 from database import get_db
+from exceptions import DatabaseUnavailableError
 from logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -8,6 +9,8 @@ logger = setup_logger(__name__)
 class DBService:
     def __init__(self):
         self.db = get_db()
+        if self.db is None:
+            raise DatabaseUnavailableError("Database is unavailable. Check MongoDB connectivity.")
 
     async def find_user_by_email(self, email: str):
         return await self.db.users.find_one({"email": email})

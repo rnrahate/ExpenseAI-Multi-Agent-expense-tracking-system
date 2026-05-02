@@ -18,3 +18,5 @@ env/
 .idea/
 .vscode/
 .sixth
+backend_server.err
+backend_server.out

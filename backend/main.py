@@ -9,7 +9,7 @@ from auth import create_access_token, verify_token, hash_password, verify_passwo
 from models.schemas import SignupRequest, LoginRequest, AnalyzeRequest, TokenResponse, AnalyzeResponse
 from services.db_service import DBService
 from agents.orchestrator import Orchestrator
-from exceptions import AppException
+from exceptions import AppException, DatabaseUnavailableError
 
 logger = setup_logger(__name__)
 bearer_scheme = HTTPBearer()
@@ -59,6 +59,9 @@ async def signup(payload: SignupRequest):
         user_id = await db.create_user(user_data)
         logger.info(f"New user registered: {payload.email}")
         return {"message": "Registration successful", "user_id": str(user_id)}
+    except DatabaseUnavailableError as e:
+        logger.error(f"Signup database error: {e.message}")
+        raise HTTPException(status_code=e.status_code, detail=e.message)
     except AppException as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
     except Exception as e:
@@ -81,6 +84,9 @@ async def login(payload: LoginRequest):
         logger.info(f"User logged in: {user['email']}")
         return TokenResponse(access_token=token, token_type="bearer",
                              first_name=user["first_name"], email=user["email"])
+    except DatabaseUnavailableError as e:
+        logger.error(f"Login database error: {e.message}")
+        raise HTTPException(status_code=e.status_code, detail=e.message)
     except AppException as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
     except Exception as e:

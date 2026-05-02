@@ -3,3 +3,8 @@ class AppException(Exception):
         self.message = message
         self.status_code = status_code
         super().__init__(message)
+
+
+class DatabaseUnavailableError(AppException):
+    def __init__(self, message: str = "Database unavailable"):
+        super().__init__(message, 503)

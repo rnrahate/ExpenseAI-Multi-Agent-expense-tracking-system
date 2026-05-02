@@ -199,8 +199,11 @@ Dashboard Response
 
 ## 📸 Screenshots
 
-> _Add screenshots here after running the app_
+![Project Screenshot](image.png)
 
+---
+
+## 📄 Documentation
 - `auth.html` — Login/Signup page
 - `dashboard.html` — Full analytics dashboard with charts and insights
 
