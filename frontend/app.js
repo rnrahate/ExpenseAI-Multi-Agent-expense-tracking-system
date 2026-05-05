@@ -1,10 +1,12 @@
-const API_BASE = "http://localhost:8000";
+const isHttpOrigin = window.location.protocol === "http:" || window.location.protocol === "https:";
+const API_BASE = isHttpOrigin ? "" : "http://localhost:8000";
+const AUTH_PAGE = isHttpOrigin ? "/auth" : "auth.html";
 const token = localStorage.getItem("token");
 let pieChartInstance = null;
 let barChartInstance = null;
 
 // Auth guard
-if (!token) window.location.href = "auth.html";
+if (!token) window.location.href = AUTH_PAGE;
 
 // Init user info
 document.getElementById("userName").textContent = localStorage.getItem("userName") || "User";
@@ -14,7 +16,7 @@ document.getElementById("userAvatar").textContent = initials;
 
 function logout() {
   localStorage.clear();
-  window.location.href = "auth.html";
+  window.location.href = AUTH_PAGE;
 }
 
 // ============ EXPENSE ROWS ============
@@ -109,7 +111,7 @@ async function runAnalysis() {
 
     if (res.status === 401) {
       localStorage.clear();
-      window.location.href = "auth.html";
+      window.location.href = AUTH_PAGE;
       return;
     }
 

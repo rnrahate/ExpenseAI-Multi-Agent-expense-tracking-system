@@ -1,6 +1,14 @@
-const API_BASE = "http://localhost:8000";
+const isHttpOrigin = window.location.protocol === "http:" || window.location.protocol === "https:";
+const API_BASE = isHttpOrigin ? "" : "http://localhost:8000";
+const DASHBOARD_PAGE = isHttpOrigin ? "/dashboard" : "dashboard.html";
 
 function switchTab(tab) {
+  const note = document.getElementById('authNote');
+  if (note) {
+    note.innerHTML = tab === 'login'
+      ? 'Don\'t have an account? <a href="#" onclick="switchTab(\'signup\')">Create one free</a>'
+      : 'Already have an account? <a href="#" onclick="switchTab(\'login\')">Sign in</a>';
+  }
   const loginForm = document.getElementById("loginForm");
   const signupForm = document.getElementById("signupForm");
   const loginTab = document.getElementById("loginTab");
@@ -71,7 +79,7 @@ async function handleLogin() {
     localStorage.setItem("userEmail", data.email);
 
     showMessage("Login successful! Redirecting...", "success");
-    setTimeout(() => { window.location.href = "dashboard.html"; }, 800);
+    setTimeout(() => { window.location.href = DASHBOARD_PAGE; }, 800);
   } catch (err) {
     showMessage("Cannot reach server. Is the backend running?");
   } finally {
@@ -129,11 +137,6 @@ async function handleSignup() {
     btn.disabled = false;
     btn.textContent = "Create Account →";
   }
-}
-
-// Redirect if already logged in
-if (localStorage.getItem("token")) {
-  window.location.href = "dashboard.html";
 }
 
 // Enter key support

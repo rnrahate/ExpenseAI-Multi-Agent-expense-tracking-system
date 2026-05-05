@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     DB_NAME: str
     API_BASE_URL: str
+    GEMINI_MODEL: str = "gemini-1.5-flash"
     TOKEN_EXPIRE_HOURS: int = 2
     ALGORITHM: str = "HS256"
 

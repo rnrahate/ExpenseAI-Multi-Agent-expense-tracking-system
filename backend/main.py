@@ -1,8 +1,12 @@
+from pathlib import Path
+
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
-from backend.logger import setup_logger
+from backend.logger import get_run_log_dir, setup_logger
 from backend.config import settings
 from backend.database import connect_db, disconnect_db
 from backend.auth import create_access_token, verify_token, hash_password, verify_password
@@ -13,12 +17,17 @@ from backend.exceptions import AppException, DatabaseUnavailableError
 
 logger = setup_logger(__name__)
 bearer_scheme = HTTPBearer()
+frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
+index_page = frontend_dir / "index.html"
+auth_page = frontend_dir / "auth.html"
+dashboard_page = frontend_dir / "dashboard.html"
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await connect_db()
     logger.info("Application started")
+    logger.info(f"Run logs directory: {get_run_log_dir()}")
     yield
     await disconnect_db()
     logger.info("Application stopped")
@@ -33,7 +42,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
     token = credentials.credentials
@@ -109,3 +117,51 @@ async def analyze(payload: AnalyzeRequest, current_user: dict = Depends(get_curr
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/", include_in_schema=False)
+async def root():
+    return FileResponse(index_page)
+
+
+@app.get("/index", include_in_schema=False)
+async def index_redirect():
+    return RedirectResponse(url="/")
+
+
+@app.get("/index.html", include_in_schema=False)
+async def index_html_redirect():
+    return RedirectResponse(url="/")
+
+
+@app.get("/auth", include_in_schema=False)
+async def auth_template():
+    return FileResponse(auth_page)
+
+
+@app.get("/auth/", include_in_schema=False)
+async def auth_redirect():
+    return RedirectResponse(url="/auth")
+
+
+@app.get("/auth.html", include_in_schema=False)
+async def auth_html_redirect():
+    return RedirectResponse(url="/auth")
+
+
+@app.get("/dashboard", include_in_schema=False)
+async def dashboard_template():
+    return FileResponse(dashboard_page)
+
+
+@app.get("/dashboard/", include_in_schema=False)
+async def dashboard_redirect():
+    return RedirectResponse(url="/dashboard")
+
+
+@app.get("/dashboard.html", include_in_schema=False)
+async def dashboard_html_redirect():
+    return RedirectResponse(url="/dashboard")
+
+
+app.mount("/", StaticFiles(directory=frontend_dir), name="frontend")

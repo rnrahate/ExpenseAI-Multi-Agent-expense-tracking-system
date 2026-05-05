@@ -24,8 +24,8 @@
 | Backend | FastAPI, Python 3.11+ |
 | Database | MongoDB (Motor async driver) |
 | Auth | JWT (PyJWT), passlib[bcrypt] |
-| AI/LLM | Google Gemini 1.5 Flash |
-| Agent Orchestration | Custom pipeline (LangChain-compatible) |
+| AI/LLM | Google Gemini 1.5 Flash via LangChain |
+| Agent Orchestration | LangGraph state machine with prompt-driven agents |
 | Frontend | HTML5, CSS3, Vanilla JavaScript |
 | Charts | Chart.js v4 |
 
@@ -33,44 +33,43 @@
 
 ## 📁 Project Structure
 
-```
-expense-agent-ai/
-│
+```text
+ExpenseAI_MultiAgent/
 ├── backend/
-│   ├── main.py                 # FastAPI app, routes
-│   ├── config.py               # Pydantic settings
-│   ├── logger.py               # Logging setup
-│   ├── exceptions.py           # Custom exceptions
-│   ├── auth.py                 # JWT + bcrypt
-│   ├── database.py             # MongoDB connection
-│   │
+│   ├── __init__.py
+│   ├── main.py                      # FastAPI app + route handlers + static mounting
+│   ├── auth.py                      # JWT create/verify + password hashing
+│   ├── config.py                    # App settings and environment loading
+│   ├── database.py                  # MongoDB connection lifecycle
+│   ├── exceptions.py                # App-level custom exceptions
+│   ├── logger.py                    # Structured logging utilities
 │   ├── agents/
-│   │   ├── orchestrator.py     # Pipeline coordinator
-│   │   ├── ingestion_agent.py  # Validate & normalize
-│   │   ├── classification_agent.py  # Rule + AI classify
-│   │   ├── pattern_agent.py    # Spending pattern detection
-│   │   ├── risk_agent.py       # Risk scoring & alerts
-│   │   └── suggestion_agent.py # Gemini suggestions
-│   │
+│   │   ├── orchestrator.py          # LangGraph-style workflow coordination
+│   │   ├── state.py                 # Shared pipeline state model
+│   │   ├── output_models.py         # Final response/output shapes
+│   │   ├── ingestion_agent.py       # Input cleaning and normalization
+│   │   ├── classification_agent.py  # Category + essential/non-essential tagging
+│   │   ├── pattern_agent.py         # Spending pattern and trend extraction
+│   │   ├── risk_agent.py            # Risk score and alert generation
+│   │   └── suggestion_agent.py      # AI savings suggestions
+│   ├── models/
+│   │   └── schemas.py               # Request/response Pydantic models
 │   ├── services/
-│   │   ├── gemini_service.py   # Gemini API wrapper
-│   │   └── db_service.py       # MongoDB operations
-│   │
-│   ├── models/schemas.py       # Pydantic schemas
-│   ├── utils/
-│   │   ├── helpers.py          # Utility functions
-│   │   └── validators.py       # Input validation
-│   │
-│   ├── .env                    # Environment variables
-│   └── requirements.txt
-│
+│   │   ├── db_service.py            # User and data persistence operations
+│   │   ├── gemini_service.py        # Gemini interaction wrapper
+│   │   ├── rag_service.py           # Retrieval-augmented helper service
+│   │   └── vector_store.py          # Vector/index support utilities
+│   └── utils/
+│       ├── helpers.py               # Common helper functions
+│       └── validators.py            # Input/domain validation helpers
 ├── frontend/
-│   ├── auth.html               # Login/Signup page
-│   ├── dashboard.html          # Main dashboard
-│   ├── styles.css              # Global dark theme styles
-│   ├── auth.js                 # Auth API calls
-│   └── app.js                  # Dashboard logic + charts
-│
+│   ├── index.html                   # Landing page
+│   ├── auth.html                    # Login/signup UI
+│   ├── dashboard.html               # Dashboard UI
+│   ├── auth.js                      # Auth actions (signup/login)
+│   ├── app.js                       # Dashboard behavior + API calls + chart rendering
+│   └── styles.css                   # Shared styling
+├── requirements.txt
 ├── README.md
 └── .gitignore
 ```
@@ -113,24 +112,25 @@ pip install -r requirements.txt
 ### 5. Run the Backend
 
 ```bash
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 Backend runs at: `http://localhost:8000`  
 API docs at: `http://localhost:8000/docs`
 
-### 6. Open the Frontend
+### 6. Open the App
 
-Simply open `frontend/auth.html` in your browser (or serve with a static file server):
+The FastAPI server now serves the frontend templates and static assets directly, so open:
 
 ```bash
-# Option A: Direct open
-open frontend/auth.html
+http://localhost:8000/
+```
 
-# Option B: Python static server
-cd frontend
-python -m http.server 3000
-# Open http://localhost:3000/auth.html
+You can also go directly to:
+
+```bash
+http://localhost:8000/auth
+http://localhost:8000/dashboard
 ```
 
 ---
@@ -166,33 +166,35 @@ Authorization: Bearer <token>
 | Variable | Description | Example |
 |---|---|---|
 | `GEMINI_API_KEY` | Google AI Studio API key | `AIza...` |
+| `GEMINI_MODEL` | Gemini model name used by LangChain | `gemini-1.5-flash` |
 | `MONGO_URI` | MongoDB connection string | `mongodb://localhost:27017` |
 | `SECRET_KEY` | JWT signing secret (change in production!) | `my-secret-key-123` |
 
 ---
 
-## 🤖 Agent Pipeline
+## 🔄 Project Workflow
 
-```
-User Expenses
-     │
-     ▼
-IngestionAgent      → Validate & normalize expense data
-     │
-     ▼
-ClassificationAgent → Rule-based + Gemini AI categorization
-     │
-     ▼
-PatternAgent        → Detect spending patterns & compute totals
-     │
-     ▼
-RiskAgent           → Score financial risk, generate alerts
-     │
-     ▼
-SuggestionAgent     → Gemini-powered personalized tips
-     │
-     ▼
-Dashboard Response
+```mermaid
+flowchart TD
+    U[User] --> FE[Frontend UI\nindex/auth/dashboard]
+    FE -->|POST /signup| SU[FastAPI Signup Endpoint]
+    FE -->|POST /login| LO[FastAPI Login Endpoint]
+    SU --> DB[(MongoDB)]
+    LO --> DB
+    LO --> JWT[JWT Token Issued]
+    JWT --> FE
+    FE -->|POST /analyze + Bearer Token| AN[Analyze Endpoint]
+
+    AN --> ORCH[Orchestrator]
+    ORCH --> ING[Ingestion Agent]
+    ING --> CLS[Classification Agent]
+    CLS --> PAT[Pattern Agent]
+    PAT --> RSK[Risk Agent]
+    RSK --> SUG[Suggestion Agent]
+    SUG --> RESP[Structured Analysis Response]
+
+    RESP --> FE
+    FE --> CH[Charts + Alerts + Suggestions]
 ```
 
 ---

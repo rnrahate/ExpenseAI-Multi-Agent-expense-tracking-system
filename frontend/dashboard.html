@@ -3,173 +3,189 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ExpenseAI — Dashboard>💸</title>
-  <link rel="stylesheet" href="styles.css" />
+  <title>ExpenseAI — Dashboard</title>
+  <link rel="stylesheet" href="/styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
-  <!-- LOADING OVERLAY -->
-  <div class="loading-overlay" id="loadingOverlay">
-    <div class="spinner"></div>
-    <p class="loading-text" id="loadingText">AI agents analyzing your expenses...</p>
-  </div>
 
-  <div class="app-layout">
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-      <div class="sidebar-logo">
-        <div class="icon">💸</div>
-        <h2>Expense<span>AI</span></h2>
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <p class="loading-text">🤖 AI agents analyzing your expenses...</p>
+</div>
+
+<div class="app-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <a href="/" class="sidebar-logo">
+      <div class="icon">💸</div>
+      <h2>Expense<span>AI</span></h2>
+    </a>
+
+    <div class="nav-section">
+      <div class="nav-label">Main</div>
+      <a class="nav-item active" href="#">📊 Dashboard</a>
+      <a class="nav-item" href="#analyze-section">🤖 Analyze</a>
+      <a class="nav-item" href="#alerts-section">🔔 Alerts</a>
+      <a class="nav-item" href="#suggestions-section">💡 Suggestions</a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Info</div>
+      <a class="nav-item" href="/#about">📖 About</a>
+      <a class="nav-item" href="/#developer">👨‍💻 Developer</a>
+      <a class="nav-item" href="https://github.com/rnrahate" target="_blank">🐙 GitHub</a>
+      <a class="nav-item" href="https://linkedin.com/in/aryan-rahate" target="_blank">🔗 LinkedIn</a>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-widget">
+        <div class="user-avatar" id="userAvatar">U</div>
+        <div class="user-info">
+          <p id="userName">Loading...</p>
+          <span id="userEmail">—</span>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="logout()">Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <div>
+        <h1>Financial Dashboard</h1>
+        <p>AI-powered expense intelligence at your fingertips</p>
+      </div>
+      <div id="riskBadge"></div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card purple">
+        <div class="stat-icon">💰</div>
+        <div class="stat-label">Total Spent</div>
+        <div class="stat-value" id="statTotal">—</div>
+        <div class="stat-sub" id="statBudgetPct">Add expenses to analyze</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon">✅</div>
+        <div class="stat-label">Essential</div>
+        <div class="stat-value" id="statEssential">—</div>
+        <div class="stat-sub" id="statEssentialPct">—</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-icon">🛍️</div>
+        <div class="stat-label">Non-Essential</div>
+        <div class="stat-value" id="statNonEssential">—</div>
+        <div class="stat-sub" id="statNonEssentialPct">—</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-icon">🎯</div>
+        <div class="stat-label">Remaining</div>
+        <div class="stat-value" id="statRemaining">—</div>
+        <div class="stat-sub" id="statLimit">of your limit</div>
+      </div>
+    </div>
+
+    <!-- ANALYZE INPUT -->
+    <div class="card input-section" id="analyze-section">
+      <div class="card-title">🤖 AI Expense Analyzer</div>
+
+      <div class="form-group" style="max-width:260px; margin-bottom:1.25rem;">
+        <label>Monthly Budget Limit ($)</label>
+        <input type="number" id="monthlyLimit" value="3000" min="1" />
       </div>
 
-      <div class="nav-section">
-        <div class="nav-label">Main</div>
-        <a class="nav-item active" href="#">📊 Dashboard</a>
-        <a class="nav-item" href="#analyze-section">🤖 Analyze</a>
-        <a class="nav-item" href="#alerts-section">🔔 Alerts</a>
-        <a class="nav-item" href="#suggestions-section">💡 Suggestions</a>
-      </div>
+      <div id="expenseRows"></div>
 
-      <div class="sidebar-footer">
-        <div class="user-widget">
-          <div class="user-avatar" id="userAvatar">U</div>
-          <div class="user-info">
-            <p id="userName">Loading...</p>
-            <span id="userEmail">—</span>
+      <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap; margin-top:0.75rem;">
+        <button class="btn-add-row" onclick="addExpenseRow()">+ Add Expense</button>
+        <button class="btn-analyze" id="analyzeBtn" onclick="runAnalysis()">🤖 Run AI Analysis</button>
+      </div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="grid-2" id="chartsRow" style="display:none;">
+      <div class="card">
+        <div class="card-title">📊 Spending Distribution</div>
+        <div class="chart-container">
+          <canvas id="pieChart"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📈 Essential vs Non-Essential</div>
+        <div class="chart-container">
+          <canvas id="barChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- BUDGET + RISK -->
+    <div class="grid-2" id="budgetRow" style="display:none;">
+      <div class="card">
+        <div class="card-title">💳 Budget Progress</div>
+        <div class="budget-progress">
+          <div class="budget-bar-wrap">
+            <div class="budget-bar-fill" id="budgetBar" style="width:0%;background:var(--accent);"></div>
+          </div>
+          <div class="budget-labels">
+            <span id="budgetUsed">$0 used</span>
+            <span id="budgetLimit">$0 limit</span>
           </div>
         </div>
-        <button class="btn-logout" onclick="logout()">Sign Out</button>
+        <div id="patternsContainer" style="margin-top:1rem;"></div>
       </div>
-    </aside>
-
-    <!-- MAIN CONTENT -->
-    <main class="main-content">
-      <!-- HEADER -->
-      <div class="page-header">
-        <div>
-          <h1>Financial Dashboard</h1>
-          <p>AI-powered expense intelligence at your fingertips</p>
-        </div>
-        <div id="riskBadge"></div>
-      </div>
-
-      <!-- STATS ROW -->
-      <div class="stats-grid" id="statsGrid">
-        <div class="stat-card purple">
-          <div class="stat-icon">💰</div>
-          <div class="stat-label">Total Spent</div>
-          <div class="stat-value" id="statTotal">—</div>
-          <div class="stat-sub" id="statBudgetPct">Enter expenses to analyze</div>
-        </div>
-        <div class="stat-card green">
-          <div class="stat-icon">✅</div>
-          <div class="stat-label">Essential</div>
-          <div class="stat-value" id="statEssential">—</div>
-          <div class="stat-sub" id="statEssentialPct">—</div>
-        </div>
-        <div class="stat-card red">
-          <div class="stat-icon">🛍️</div>
-          <div class="stat-label">Non-Essential</div>
-          <div class="stat-value" id="statNonEssential">—</div>
-          <div class="stat-sub" id="statNonEssentialPct">—</div>
-        </div>
-        <div class="stat-card blue">
-          <div class="stat-icon">🎯</div>
-          <div class="stat-label">Remaining</div>
-          <div class="stat-value" id="statRemaining">—</div>
-          <div class="stat-sub" id="statLimit">of your limit</div>
-        </div>
-      </div>
-
-      <!-- ANALYZE INPUT SECTION -->
-      <div class="card input-section" id="analyze-section">
-        <div class="card-title">🤖 AI Expense Analyzer</div>
-
-        <div class="form-group" style="max-width:240px; margin-bottom:1rem;">
-          <label>Monthly Budget Limit ($)</label>
-          <input type="number" id="monthlyLimit" value="3000" min="1" />
-        </div>
-
-        <div id="expenseRows">
-          <!-- Rows added dynamically -->
-        </div>
-
-        <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap; margin-top:0.5rem;">
-          <button class="btn-add-row" onclick="addExpenseRow()">+ Add Expense</button>
-          <button class="btn-analyze" id="analyzeBtn" onclick="runAnalysis()">🤖 Run AI Analysis</button>
-        </div>
-      </div>
-
-      <!-- CHARTS ROW -->
-      <div class="grid-2" id="chartsRow" style="display:none;">
-        <div class="card">
-          <div class="card-title">📊 Spending Distribution</div>
-          <div class="chart-container">
-            <canvas id="pieChart"></canvas>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-title">📈 Essential vs Non-Essential</div>
-          <div class="chart-container">
-            <canvas id="barChart"></canvas>
-          </div>
-        </div>
-      </div>
-
-      <!-- BUDGET PROGRESS + RISK -->
-      <div class="grid-2" id="budgetRow" style="display:none;">
-        <div class="card">
-          <div class="card-title">💳 Budget Progress</div>
-          <div class="budget-progress">
-            <div class="budget-bar-wrap">
-              <div class="budget-bar-fill" id="budgetBar" style="width:0%; background: var(--accent);"></div>
-            </div>
-            <div class="budget-labels">
-              <span id="budgetUsed">$0 used</span>
-              <span id="budgetLimit">$0 limit</span>
-            </div>
-          </div>
-          <div id="patternsContainer" style="margin-top:1rem;"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">⚠️ Risk Assessment</div>
-          <div class="risk-meter">
-            <div class="risk-score" id="riskScore">0</div>
-            <div class="risk-label">Risk Score (out of 10)</div>
-            <div class="risk-bar">
-              <div class="risk-bar-fill" id="riskBar" style="width:0%;"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- CATEGORIES -->
-      <div class="card" id="categoriesSection" style="display:none; margin-bottom:1.5rem;">
-        <div class="card-title">🏷️ Category Breakdown</div>
-        <div id="categoriesContainer"></div>
-      </div>
-
-      <!-- ALERTS + SUGGESTIONS -->
-      <div class="grid-2" id="alerts-section" style="display:none;">
-        <div class="card">
-          <div class="card-title">🔔 Alerts</div>
-          <div id="alertsContainer">
-            <div class="empty-state"><div class="icon">✅</div><p>No alerts — run analysis first</p></div>
-          </div>
-        </div>
-        <div class="card" id="suggestions-section">
-          <div class="card-title">💡 AI Suggestions</div>
-          <div id="suggestionsContainer">
-            <div class="empty-state"><div class="icon">🤖</div><p>Suggestions will appear after analysis</p></div>
+      <div class="card">
+        <div class="card-title">⚠️ Risk Assessment</div>
+        <div class="risk-meter">
+          <div class="risk-score" id="riskScore">0</div>
+          <div class="risk-label">Risk Score (out of 10)</div>
+          <div class="risk-bar">
+            <div class="risk-bar-fill" id="riskBar" style="width:0%;"></div>
           </div>
         </div>
       </div>
+    </div>
 
-    </main>
-  </div>
+    <!-- CATEGORIES -->
+    <div class="card" id="categoriesSection" style="display:none;">
+      <div class="card-title">🏷️ Category Breakdown</div>
+      <div id="categoriesContainer"></div>
+    </div>
 
-  <script src="app.js"></script>
+    <!-- ALERTS + SUGGESTIONS -->
+    <div class="grid-2" id="alerts-section" style="display:none;">
+      <div class="card">
+        <div class="card-title">🔔 Alerts</div>
+        <div id="alertsContainer">
+          <div class="empty-state"><div class="icon">✅</div><p>No alerts — run analysis first</p></div>
+        </div>
+      </div>
+      <div class="card" id="suggestions-section">
+        <div class="card-title">💡 AI Suggestions</div>
+        <div id="suggestionsContainer">
+          <div class="empty-state"><div class="icon">🤖</div><p>Suggestions will appear after analysis</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER NOTE -->
+    <div style="text-align:center; padding:2rem 0 1rem; border-top:1px solid var(--border); margin-top:1rem;">
+      <p style="color:var(--text3); font-size:0.78rem;">
+        © 2025 ExpenseAI · Built by
+        <a href="https://linkedin.com/in/aryan-rahate" target="_blank" style="color:var(--accent);text-decoration:none;">Aryan Rahate</a>
+        ·
+        <a href="https://github.com/rnrahate" target="_blank" style="color:var(--accent);text-decoration:none;">GitHub</a>
+      </p>
+    </div>
+  </main>
+</div>
+
+<script src="/app.js"></script>
 </body>
 </html>

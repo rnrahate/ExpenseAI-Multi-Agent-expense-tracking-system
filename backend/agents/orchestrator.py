@@ -1,17 +1,21 @@
 from typing import List
-from backend.models.schemas import ExpenseItem, AnalyzeResponse, CategoryBreakdown, Alert
+
+from langgraph.graph import END, START, StateGraph
+
 from backend.agents.ingestion_agent import IngestionAgent
 from backend.agents.classification_agent import ClassificationAgent
 from backend.agents.pattern_agent import PatternAgent
 from backend.agents.risk_agent import RiskAgent
 from backend.agents.suggestion_agent import SuggestionAgent
+from backend.agents.state import ExpenseGraphState
 from backend.logger import setup_logger
+from backend.models.schemas import Alert, AnalyzeResponse, CategoryBreakdown, ExpenseItem
 
 logger = setup_logger(__name__)
 
 
 class Orchestrator:
-    """Coordinates all agents in sequential pipeline."""
+    """Coordinates the LangGraph-based multi-agent expense analysis workflow."""
 
     def __init__(self):
         self.ingestion = IngestionAgent()
@@ -19,14 +23,44 @@ class Orchestrator:
         self.pattern = PatternAgent()
         self.risk = RiskAgent()
         self.suggestion = SuggestionAgent()
+        self.graph = self._build_graph()
+
+    def _build_graph(self):
+        workflow = StateGraph(ExpenseGraphState)
+        workflow.add_node("ingestion", self.ingestion.run)
+        workflow.add_node("classification", self.classification.run)
+        workflow.add_node("pattern", self.pattern.run)
+        workflow.add_node("risk", self.risk.run)
+        workflow.add_node("suggestion", self.suggestion.run)
+
+        workflow.add_edge(START, "ingestion")
+        workflow.add_conditional_edges(
+            "ingestion",
+            self._route_after_ingestion,
+            {
+                "classification": "classification",
+                "end": END,
+            },
+        )
+        workflow.add_edge("classification", "pattern")
+        workflow.add_edge("pattern", "risk")
+        workflow.add_edge("risk", "suggestion")
+        workflow.add_edge("suggestion", END)
+        return workflow.compile()
+
+    def _route_after_ingestion(self, state: ExpenseGraphState) -> str:
+        return "classification" if state.get("expenses") else "end"
 
     async def run(self, expenses: List[ExpenseItem], monthly_limit: float) -> AnalyzeResponse:
-        logger.info("Orchestrator: starting pipeline")
+        logger.info("Orchestrator: starting LangGraph pipeline")
+        state = await self.graph.ainvoke(
+            {
+                "raw_expenses": expenses,
+                "monthly_limit": monthly_limit,
+            }
+        )
 
-        # Step 1: Ingest & validate
-        data = self.ingestion.run(expenses, monthly_limit)
-
-        if not data["expenses"]:
+        if not state.get("expenses"):
             logger.warning("Orchestrator: no valid expenses after ingestion")
             return AnalyzeResponse(
                 total_spent=0, monthly_limit=monthly_limit, remaining_budget=monthly_limit,
@@ -34,30 +68,18 @@ class Orchestrator:
                 suggestions=["No valid expenses to analyze."], risk_score=0, patterns=[], classified_expenses=[]
             )
 
-        # Step 2: Classify
-        data = await self.classification.run(data)
-
-        # Step 3: Pattern detection
-        data = self.pattern.run(data)
-
-        # Step 4: Risk evaluation
-        data = self.risk.run(data)
-
-        # Step 5: Suggestions
-        data = await self.suggestion.run(data)
-
-        logger.info("Orchestrator: pipeline complete")
+        logger.info("Orchestrator: LangGraph pipeline complete")
 
         return AnalyzeResponse(
-            total_spent=data["total_spent"],
-            monthly_limit=data["monthly_limit"],
-            remaining_budget=round(data["monthly_limit"] - data["total_spent"], 2),
-            essential_total=data["essential_total"],
-            non_essential_total=data["non_essential_total"],
-            categories=[CategoryBreakdown(**c) for c in data["categories"]],
-            alerts=[Alert(**a) for a in data["alerts"]],
-            suggestions=data["suggestions"],
-            risk_score=data["risk_score"],
-            patterns=data["patterns"],
-            classified_expenses=data["expenses"],
+            total_spent=state["total_spent"],
+            monthly_limit=state["monthly_limit"],
+            remaining_budget=round(state["monthly_limit"] - state["total_spent"], 2),
+            essential_total=state["essential_total"],
+            non_essential_total=state["non_essential_total"],
+            categories=[CategoryBreakdown(**c) for c in state["categories"]],
+            alerts=[Alert(**a) for a in state["alerts"]],
+            suggestions=state["suggestions"],
+            risk_score=state["risk_score"],
+            patterns=state["patterns"],
+            classified_expenses=state["expenses"],
         )

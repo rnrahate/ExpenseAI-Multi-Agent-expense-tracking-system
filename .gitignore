@@ -20,3 +20,6 @@ env/
 .sixth
 backend_server.err
 backend_server.out
+logs
+log/
+/logs
